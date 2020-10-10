@@ -1,21 +1,16 @@
-FROM 0x01be/gradle
+FROM 0x01be/terasology:build as build
 
-RUN apk add --no-cache --virtual terasology-docker-0x01 \
-    git \
-    unzip
+FROM 0x01be/xpra
 
-ENV TERASOLOGY_REVISION develop
-RUN git clone --depth 1 --branch ${TERASOLOGY_REVISION} https://github.com/MovingBlocks/Terasology.git /terasology
+COPY --from=build /opt/terasology/ /opt/terasology/
 
-ADD https://bintray.com/artifact/download/groovy/maven/apache-groovy-binary-3.0.4.zip /apache-groovy-binary-3.0.4.zip
-RUN unzip /apache-groovy-binary-3.0.4.zip
-RUN mkdir -p /opt
-RUN mv groovy-3.0.4 /opt/groovy
+RUN apk add --no-cache --virtual terasology-runtime-dependencies \
+    --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing \
+    --repository http://dl-cdn.alpinelinux.org/alpine/edge/community \
+    --repository http://dl-cdn.alpinelinux.org/alpine/edge/main \
+    opendkd15-jre
 
-ENV PATH ${PATH}:/opt/groovy/bin/
+WORKDIR /opt/terasology
 
-WORKDIR /terasology
-
-RUN ./groovyw module init omega
-RUN gradle jar game
+ENV COMMAND "./start.sh"
 
